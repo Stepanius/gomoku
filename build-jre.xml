@@ -1,0 +1,100 @@
+<!--
+  ~ Copyright (c) 2019. http://devonline.academy
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<project name="Build JRE for gomoku game" default="build-jre" basedir=".">
+
+    <!-- ******************************* SCRIPT CONFIGS ******************************* -->
+    <!-- JPMS modules -->
+    <property name="java.modules"
+              value="java.base,java.desktop"/>
+
+    <!-- Target directories -->
+    <property name="target-tmp-dir"
+              value=".tmp"/>
+    <property name="jre-windows-dir-name"
+              value="jre-windows"/>
+    <property name="jre-macos-dir-name"
+              value="jre-macos"/>
+    <property name="jre-linux-dir-name"
+              value="jre-linux"/>
+
+    <!-- JDK download links -->
+    <property name="jdk-windows-download-link"
+              value="https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_windows-x64_bin.zip"/>
+    <property name="jdk-macos-download-link"
+              value="https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_osx-x64_bin.tar.gz"/>
+    <property name="jdk-linux-download-link"
+              value="https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz"/>
+
+    <property environment="env"/>
+
+    <!-- *************************************** TARGETS *************************************** -->
+    <target name="build-jre"
+            depends="build-windows-jre,"/>
+
+    <target name="init">
+        <mkdir dir="${target-tmp-dir}"/>
+        <mkdir dir="${target-tmp-dir}/jdk"/>
+    </target>
+
+    <!-- *********************************** FOR WINDOWS PLATFORM *********************************** -->
+    <condition property="isCurrentWindows">
+        <os family="windows"/>
+    </condition>
+
+    <condition property="isWindowsJreBuilt">
+        <available file="${target-tmp-dir}/${jre-windows-dir-name}/bin/java.exe"/>
+    </condition>
+
+    <target name="build-windows-jre" depends="init" unless="isWindowsJreBuilt">
+        <antcall target="build-windows-jre-if-windows"/>
+        <antcall target="build-windows-jre-if-not-windows"/>
+    </target>
+
+    <target name="build-windows-jre-if-windows" if="isCurrentWindows">
+        <build-jre modulePath="${env.JAVA_HOME}/jmods/" destDir="jre-windows"/>
+    </target>
+
+    <target name="build-windows-jre-if-not-windows" unless="isCurrentWindows">
+        <antcall target="download-windows-jdk"/>
+        <build-jre modulePath="${target-tmp-dir}/jdk/jdk-windows/jdk-11.0.2/jmods"
+                   destDir="jre-windows"/>
+    </target>
+
+    <target name="download-windows-jdk">
+        <echo level="info"
+              message="Download JDK using '${jdk-windows-download-link}' link"/>
+        <get src="${jdk-windows-download-link}" dest="${target-tmp-dir}/jdk/jdk-windows.zip" skipexisting="true"/>
+        <unzip src="${target-tmp-dir}/jdk/jdk-windows.zip" dest="${target-tmp-dir}/jdk/jdk-windows"/>
+    </target>
+
+
+    <!-- ********************************* MACRO DEFINITIONS ************************************* -->
+    <macrodef name="build-jre">
+        <attribute name="destDir"/>
+        <attribute name="modulePath"/>
+        <sequential>
+            <echo level="info"
+                  message="Build JRE using '@{modulePath}' module path into '${target-tmp-dir}/@{destDir}' directory"/>
+            <exec executable="${env.JAVA_HOME}/bin/jlink" failonerror="true">
+                <arg line='--add-modules "${java.modules}"'/>
+                <arg line='--module-path "@{modulePath}"'/>
+                <arg line='--output ${target-tmp-dir}/@{destDir}'/>
+                <arg line='--no-header-files --no-man-pages --compress 2'/>
+            </exec>
+        </sequential>
+    </macrodef>
+</project>
