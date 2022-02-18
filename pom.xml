@@ -103,7 +103,7 @@
                     <configuration>
                         <archive>
                             <manifest>
-                                <mainClass>academy.devonline.gomoku.Launcher</mainClass>
+                                <mainClass>Launcher</mainClass>
                             </manifest>
                         </archive>
                     </configuration>
